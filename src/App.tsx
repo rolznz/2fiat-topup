@@ -23,6 +23,7 @@ function App() {
   const [provider, setProvider] = React.useState<WebLNProvider>();
   const [cardDetails, setCardDetails] = React.useState<CardDetails>();
   const [walletBalance, setWalletBalance] = React.useState<number>();
+  const [isPaying, setPaying] = React.useState(false);
 
   // format is https://2fiat.com/wallet/XXX/card-details/YYY?provider=VCC
   const cardParts = cardUrl.split("/");
@@ -84,49 +85,63 @@ function App() {
     }
 
     (async () => {
-      const topupDetailsResponse = await fetch(
-        `https://2fiat.com/api/v1/prepaid-cards/topup/${cardId}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${userToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            topupValue: amountText,
-            selectedMethod: "BTC-CHAIN",
-          }),
-        }
-      );
-      const topupDetails = (await topupDetailsResponse.json()) as {
-        id: string;
-      };
-
-      // wait for the backend to properly process the invoice
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // CORS workaround to fetch the invoice :scream:
-      const topupStatusUrl = `https://pay.2fiat.com/invoice/status?invoiceId=${topupDetails.id}&paymentMethodId=BTC-LN`;
-      const topupStatusResponse = await fetch(
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(
-          topupStatusUrl
-        )}`
-      );
-      const topupStatus = (await topupStatusResponse.json()) as
-        | {
-            address: string;
+      try {
+        setPaying(true);
+        const topupDetailsResponse = await fetch(
+          `https://2fiat.com/api/v1/prepaid-cards/topup/${cardId}`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${userToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              topupValue: amountText,
+              selectedMethod: "BTC-LN",
+            }),
           }
-        | undefined;
+        );
+        if (!topupDetailsResponse.ok) {
+          throw new Error(
+            "Failed to create topup: " + topupDetailsResponse.statusText
+          );
+        }
+        const topupDetails = (await topupDetailsResponse.json()) as {
+          id: string;
+        };
 
-      if (!topupStatus?.address) {
-        alert("Could not find address :(");
-        return;
+        // CORS workaround to fetch the invoice :scream:
+        const topupStatusUrl = `https://pay.2fiat.com/invoice/status?invoiceId=${topupDetails.id}&paymentMethodId=BTC-LN`;
+        const topupStatusResponse = await fetch(
+          `https://corsproxy.io?url=${encodeURIComponent(topupStatusUrl)}`
+        );
+        const topupStatus = (await topupStatusResponse.json()) as
+          | {
+              address: string;
+            }
+          | undefined;
+
+        if (!topupStatusResponse.ok) {
+          throw new Error(
+            "Failed to request lightning invoice from 2fiat invoice: " +
+              topupStatusResponse.statusText
+          );
+        }
+
+        if (!topupStatus?.address) {
+          throw new Error(
+            "Could not find address in invoice status response :("
+          );
+        }
+
+        await provider?.sendPayment(topupStatus.address);
+
+        alert("Topped up 🎉🎊");
+        refresh();
+      } catch (error) {
+        alert("Failed to topup :( " + error);
       }
-
-      await provider?.sendPayment(topupStatus.address);
-
-      alert("Topped up 🎉🎊");
-      refresh();
+      setPaying(false);
     })();
   }
 
@@ -168,7 +183,9 @@ function App() {
           <>
             <button onClick={refresh}>Refresh</button>
             <br />
-            <button onClick={topup}>Topup</button>
+            <button onClick={topup} disabled={isPaying}>
+              {isPaying ? "Topping up..." : "Topup"}
+            </button>
             <br />
           </>
         )}
