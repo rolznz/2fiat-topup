@@ -1,0 +1,10 @@
+{
+  "name": "2fiat-topup-proxy",
+  "dependencies": {
+    "express": "^5.1.0"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@flydotio/dockerfile": "^0.7.10"
+  }
+}

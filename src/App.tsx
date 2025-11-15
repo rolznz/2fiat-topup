@@ -111,9 +111,9 @@ function App() {
         };
 
         // CORS workaround to fetch the invoice :scream:
-        const topupStatusUrl = `https://pay.2fiat.com/invoice/status?invoiceId=${topupDetails.id}&paymentMethodId=BTC-LN`;
+        // real URL: https://2fiat.com/invoice/status?invoiceId=${invoiceId}&paymentMethodId=BTC-LN
         const topupStatusResponse = await fetch(
-          `https://corsproxy.io?url=${encodeURIComponent(topupStatusUrl)}`
+          `https://2fiat-topup-proxy.fly.dev/status?invoiceId=${topupDetails.id}`
         );
         const topupStatus = (await topupStatusResponse.json()) as
           | {
