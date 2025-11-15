@@ -5,6 +5,7 @@ import {
   init,
   launchModal,
   onConnected,
+  onConnecting,
   onDisconnected,
 } from "@getalby/bitcoin-connect-react";
 import type { WebLNProvider } from "@webbtc/webln-types";
@@ -24,6 +25,7 @@ function App() {
   const [cardDetails, setCardDetails] = React.useState<CardDetails>();
   const [walletBalance, setWalletBalance] = React.useState<number>();
   const [isPaying, setPaying] = React.useState(false);
+  const [isLoadingWallet, setLoadingWallet] = React.useState(false);
 
   // format is https://2fiat.com/wallet/XXX/card-details/YYY?provider=VCC
   const cardParts = cardUrl.split("/");
@@ -51,6 +53,7 @@ function App() {
   React.useEffect(() => {
     const unsub = onConnected(async (provider) => {
       setProvider(provider);
+      setLoadingWallet(false);
       const balance = await provider.getBalance?.();
       if (balance) {
         setWalletBalance(balance.balance);
@@ -63,6 +66,16 @@ function App() {
   React.useEffect(() => {
     const unsub = onDisconnected(() => {
       setProvider(undefined);
+      setLoadingWallet(false);
+    });
+    return () => {
+      unsub();
+    };
+  });
+
+  React.useEffect(() => {
+    const unsub = onConnecting(() => {
+      setLoadingWallet(true);
     });
     return () => {
       unsub();
@@ -192,8 +205,10 @@ function App() {
         {!cardUrl && <button onClick={connectCard}>Connect Card</button>}
         {cardUrl && <button onClick={disconnectCard}>Disconnect Card</button>}
         <br />
-        {!provider && <button onClick={connectWallet}>Connect Wallet</button>}
-        {provider && (
+        {!isLoadingWallet && !provider && (
+          <button onClick={connectWallet}>Connect Wallet</button>
+        )}
+        {!isLoadingWallet && provider && (
           <button onClick={disconnectWallet}>Disconnect Wallet</button>
         )}
       </div>
