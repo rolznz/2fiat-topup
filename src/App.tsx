@@ -10,6 +10,8 @@ import {
 } from "@getalby/bitcoin-connect-react";
 import type { WebLNProvider } from "@webbtc/webln-types";
 import PullToRefresh from "pulltorefreshjs";
+import { HamburgerMenu } from "./components/HamburgerMenu";
+import { getFiatValue, getFiatBtcRate } from "@getalby/lightning-tools";
 
 type CardDetails = { cardBal: string };
 
@@ -27,11 +29,22 @@ function App() {
   const [walletBalance, setWalletBalance] = React.useState<number>();
   const [isPaying, setPaying] = React.useState(false);
   const [isLoadingWallet, setLoadingWallet] = React.useState(false);
+  const [selectedCurrency, setSelectedCurrency] = React.useState<string>(
+    localStorage.getItem("selected_currency") || "USD"
+  );
 
   // format is https://2fiat.com/wallet/XXX/card-details/YYY?provider=VCC
   const cardParts = cardUrl.split("/");
   const userToken = cardParts[cardParts.indexOf("wallet") + 1];
   const cardId = cardParts[cardParts.indexOf("card-details") + 1];
+
+  const [walletFiatValue, setWalletFiatValue] = React.useState(0);
+  const [walletUsdValue, setWalletUsdValue] = React.useState(0);
+  const [cardFiatValue, setCardFiatValue] = React.useState<number>();
+
+  // Use selectedCurrency if valid (3 letters), otherwise fallback to USD
+  const validCurrency =
+    selectedCurrency.length === 3 ? selectedCurrency : "USD";
 
   React.useEffect(() => {
     if (userToken && cardId) {
@@ -64,6 +77,58 @@ function App() {
       unsub();
     };
   });
+
+  // Update wallet fiat values when balance or currency changes
+  React.useEffect(() => {
+    if (walletBalance) {
+      (async () => {
+        try {
+          // Always calculate USD value
+          const usdValue = await getFiatValue({
+            satoshi: walletBalance,
+            currency: "USD",
+          });
+          setWalletUsdValue(usdValue);
+
+          // Calculate valid currency value
+          const fiatValue = await getFiatValue({
+            satoshi: walletBalance,
+            currency: validCurrency,
+          });
+          setWalletFiatValue(fiatValue);
+        } catch (error) {
+          console.error("Error calculating wallet fiat value:", error);
+          // Fallback to USD values
+          const usdValue = await getFiatValue({
+            satoshi: walletBalance,
+            currency: "USD",
+          });
+          setWalletFiatValue(usdValue);
+          setWalletUsdValue(usdValue);
+        }
+      })();
+    }
+  }, [walletBalance, validCurrency]);
+
+  // Update card fiat value when currency changes
+  React.useEffect(() => {
+    if (cardDetails?.cardBal && validCurrency !== "USD") {
+      (async () => {
+        try {
+          const usdAmount = parseFloat(cardDetails.cardBal);
+          const btcRate = await getFiatBtcRate("USD");
+          const targetRate = await getFiatBtcRate(validCurrency);
+          const convertedValue = (usdAmount / btcRate) * targetRate;
+          setCardFiatValue(convertedValue);
+        } catch (error) {
+          console.error("Error calculating card fiat value:", error);
+          setCardFiatValue(undefined);
+        }
+      })();
+    } else {
+      setCardFiatValue(undefined);
+    }
+  }, [cardDetails?.cardBal, validCurrency]);
   React.useEffect(() => {
     const unsub = onDisconnected(() => {
       setProvider(undefined);
@@ -192,36 +257,136 @@ function App() {
     launchModal();
   }
 
+  function handleCurrencyChange(currency: string) {
+    setSelectedCurrency(currency);
+    localStorage.setItem("selected_currency", currency);
+  }
+
   return (
-    <>
-      <div>
-        <img src={logo} alt="Vite logo" width={128} />
+    <div className="min-h-screen bg-base-100" data-theme="light">
+      {/* Header with hamburger menu */}
+      <div className="navbar bg-base-100">
+        <div className="flex-1">
+          <div className="flex items-center">
+            <img src={logo} alt="2fiat Topup logo" width={64} height={64} />
+            <h1 className="text-xl font-bold ml-2">2fiat Topup</h1>
+          </div>
+        </div>
+        <div className="flex-none">
+          <HamburgerMenu
+            isCardConnected={!!cardUrl}
+            isWalletConnected={isLoadingWallet || !!provider}
+            selectedCurrency={selectedCurrency}
+            onDisconnectCard={disconnectCard}
+            onDisconnectWallet={disconnectWallet}
+            onCurrencyChange={handleCurrencyChange}
+          />
+        </div>
       </div>
-      {cardDetails && <p>Card balance: ${cardDetails.cardBal}</p>}
-      {walletBalance !== undefined && (
-        <p>Wallet balance: {walletBalance} sats</p>
-      )}
-      <div>
-        {cardDetails && walletBalance && (
-          <>
-            <br />
-            <button onClick={topup} disabled={isPaying}>
-              {isPaying ? "Topping up..." : "Topup"}
-            </button>
-            <br />
-          </>
-        )}
-        {!cardUrl && <button onClick={connectCard}>Connect Card</button>}
-        {cardUrl && <button onClick={disconnectCard}>Disconnect Card</button>}
-        <br />
-        {!isLoadingWallet && !provider && (
-          <button onClick={connectWallet}>Connect Wallet</button>
-        )}
-        {!isLoadingWallet && provider && (
-          <button onClick={disconnectWallet}>Disconnect Wallet</button>
-        )}
+
+      {/* Main content */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto space-y-6">
+          {/* Balance display cards */}
+          {cardUrl && (
+            <div className="card bg-primary text-primary-content">
+              <div className="card-body">
+                <h2 className="card-title">Card Balance</h2>
+                {cardDetails?.cardBal ? (
+                  <>
+                    <p className="text-2xl font-bold">
+                      {validCurrency === "USD"
+                        ? `$${cardDetails.cardBal}`
+                        : `${new Intl.NumberFormat(undefined, {
+                            style: "currency",
+                            currency: validCurrency,
+                          }).format(cardFiatValue || 0)}`}
+                    </p>
+                    {validCurrency !== "USD" && (
+                      <p className="text-lg opacity-80">
+                        ${cardDetails.cardBal} USD
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-2xl font-bold">Loading...</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {(walletBalance !== undefined || isLoadingWallet || provider) && (
+            <div className="card bg-secondary text-secondary-content">
+              <div className="card-body">
+                <h2 className="card-title">Wallet Balance</h2>
+                <p className="text-2xl font-bold">
+                  {walletBalance !== undefined
+                    ? `${walletBalance} sats`
+                    : "Loading..."}
+                </p>
+                {walletBalance !== undefined && (
+                  <>
+                    <p className="text-lg">
+                      {new Intl.NumberFormat(undefined, {
+                        style: "currency",
+                        currency: validCurrency,
+                      }).format(walletFiatValue)}
+                    </p>
+                    {validCurrency !== "USD" && (
+                      <p className="text-sm opacity-80">
+                        {new Intl.NumberFormat(undefined, {
+                          style: "currency",
+                          currency: "USD",
+                        }).format(walletUsdValue)}{" "}
+                        USD
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action buttons */}
+          <div className="space-y-4">
+            {cardDetails && walletBalance && (
+              <button
+                className="btn btn-primary btn-lg w-full"
+                onClick={topup}
+                disabled={isPaying}
+              >
+                {isPaying ? (
+                  <>
+                    <span className="loading loading-spinner"></span>
+                    Topping up...
+                  </>
+                ) : (
+                  "Topup"
+                )}
+              </button>
+            )}
+
+            {!cardUrl && (
+              <button
+                className="btn btn-outline btn-lg w-full"
+                onClick={connectCard}
+              >
+                Connect Card
+              </button>
+            )}
+
+            {!isLoadingWallet && !provider && (
+              <button
+                className="btn btn-outline btn-lg w-full"
+                onClick={connectWallet}
+              >
+                Connect Wallet
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
