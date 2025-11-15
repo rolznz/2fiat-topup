@@ -1435,6 +1435,11 @@
   dependencies:
     undici-types "~7.16.0"
 
+"@types/pulltorefreshjs@^0.1.7":
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/@types/pulltorefreshjs/-/pulltorefreshjs-0.1.7.tgz#1948638b0c7071282e47bd236d2ccb88bdf66753"
+  integrity sha512-Y0g/yfuycIvpvUmP97n5NE2+HDAOwfREGVERjhMWw2Y0ODh5wvbflcQ5gXPZ+ihgoq+BQZjA1DL8apw2wAsJXA==
+
 "@types/react-dom@^19.1.9":
   version "19.2.2"
   resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-19.2.2.tgz#a4cc874797b7ddc9cb180ef0d5dc23f596fc2332"
@@ -3057,6 +3062,11 @@ pretty-bytes@^6.1.1:
   version "6.1.1"
   resolved "https://registry.yarnpkg.com/pretty-bytes/-/pretty-bytes-6.1.1.tgz#38cd6bb46f47afbf667c202cfc754bffd2016a3b"
   integrity sha512-mQUvGU6aUFQ+rNvTIAcZuWGRT9a6f6Yrg9bHs4ImKF+HZCEK+plBvnAZYSIQztknZF2qnzNtr6F8s0+IuptdlQ==
+
+pulltorefreshjs@^0.1.22:
+  version "0.1.22"
+  resolved "https://registry.yarnpkg.com/pulltorefreshjs/-/pulltorefreshjs-0.1.22.tgz#ddb5e3feee0b2a49fd46e1b18e84fffef2c47ac0"
+  integrity sha512-haxNVEHnS4NCQA7NeG7TSV69z4uqy/N7nfPRuc4dPWe8H6ygUrMjdNeohE+6v0lVVX/ukSjbLYwPUGUYtFKfvQ==
 
 punycode@^2.1.0:
   version "2.3.1"

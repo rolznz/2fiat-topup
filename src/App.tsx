@@ -9,6 +9,7 @@ import {
   onDisconnected,
 } from "@getalby/bitcoin-connect-react";
 import type { WebLNProvider } from "@webbtc/webln-types";
+import PullToRefresh from "pulltorefreshjs";
 
 type CardDetails = { cardBal: string };
 
@@ -85,6 +86,15 @@ function App() {
   function refresh() {
     window.location.reload();
   }
+
+  React.useEffect(() => {
+    PullToRefresh.init({
+      mainElement: "body",
+      onRefresh() {
+        window.location.reload();
+      },
+    });
+  }, []);
 
   function topup() {
     if (!provider) {
@@ -194,7 +204,6 @@ function App() {
       <div>
         {cardDetails && walletBalance && (
           <>
-            <button onClick={refresh}>Refresh</button>
             <br />
             <button onClick={topup} disabled={isPaying}>
               {isPaying ? "Topping up..." : "Topup"}
