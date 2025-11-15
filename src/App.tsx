@@ -287,6 +287,20 @@ function App() {
       {/* Main content */}
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-md mx-auto space-y-6">
+          {!cardUrl && !provider && (
+            <p>
+              <span className="font-medium">Welcome to 2fiat topup!</span>{" "}
+              Connect your 2fiat.com card by copying the full card URL, and then
+              connect your NWC-enabled lightning wallet. Then with a couple of
+              taps you can topup your 2fiat card balance using your lightning
+              wallet.
+              <br />
+              <br />
+              This app can also be saved to your homescreen! (In iOS open this
+              URL in Safari and click share {"->"} add to homescreen. On
+              Android, use the hamburger menu on the top right)
+            </p>
+          )}
           {/* Balance display cards */}
           {cardUrl && (
             <div className="card bg-primary text-primary-content">
