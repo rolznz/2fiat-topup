@@ -321,7 +321,7 @@ function App() {
                 <h2 className="card-title">Wallet Balance</h2>
                 <p className="text-2xl font-bold">
                   {walletBalance !== undefined
-                    ? `${walletBalance} sats`
+                    ? `${new Intl.NumberFormat().format(walletBalance)} sats`
                     : "Loading..."}
                 </p>
                 {walletBalance !== undefined && (

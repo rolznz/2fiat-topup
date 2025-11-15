@@ -34,7 +34,7 @@ export function HamburgerMenu({
       </div>
       <ul
         tabIndex={0}
-        className="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52"
+        className="menu menu-sm dropdown-content mt-3 gap-2 z-10 p-2 shadow bg-base-100 rounded-box w-52"
       >
         <li>
           <div className="form-control">
@@ -51,7 +51,6 @@ export function HamburgerMenu({
             />
           </div>
         </li>
-        <div className="divider my-1"></div>
         {isCardConnected && (
           <li>
             <button onClick={onDisconnectCard} className="text-left">
