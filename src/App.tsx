@@ -263,7 +263,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-base-100" data-theme="light">
+    <div className="min-h-screen bg-base-100">
       {/* Header with hamburger menu */}
       <div className="navbar bg-base-100">
         <div className="flex-1">
